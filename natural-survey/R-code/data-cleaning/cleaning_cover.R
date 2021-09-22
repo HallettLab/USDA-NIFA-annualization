@@ -1,5 +1,5 @@
 # clean natural site survey cover datasets
-# created: 2021-07-02 (script will be modified over project lifetime)
+# modified: 9/22/21
 
 # script purpose:
 # read in Pisgah and South Eugene Meadows plant cover files and combine into one dataframe
@@ -23,13 +23,13 @@ sem <- read.csv("cover_southeugenemeadows.csv",header=FALSE)
 library(dplyr)
 combined <- full_join(pisgah, sem, by = "V1")
 
-# reorder the species alphabetically (leave off first 9 rows, which are not the species)
-df <- combined[10:115,]
+# reorder the species alphabetically (leave off first 10 rows, which are not the species)
+df <- combined[11:116,]
 df <- df[order(df$V1),]
-combined[10:115,] <- df; rm(df)
+combined[11:116,] <- df; rm(df)
 
 # replace NAs in species cover with zeros
-combined[10:115,][is.na(combined[10:115,])] <- 0
+combined[11:116,][is.na(combined[11:116,])] <- 0
 
 # export long format to match it up with a functional group file I will create in Excel
 colnames(combined) <- as.character(combined[1,]) # first replace the column headers with the first row
