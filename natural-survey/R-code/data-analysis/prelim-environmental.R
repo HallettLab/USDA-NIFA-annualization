@@ -1,4 +1,4 @@
-# created 2021-09-23
+# updated 2021-09-24
 # preliminary analyses for environmental data
 library(lme4)
 library(lmerTest)
@@ -34,7 +34,31 @@ hist((env$moist_mean))
 # use a logit transformation, or beta regression from glmmTMB
 hist(logit(env$moist_mean)) # looks good! logit transform is a lot easier.
 
-# model soil moisture
+# calculate sample means and CIs
+sumSE.moist <- summarySE(env, measurevar = "moist_mean", groupvars = 'stand')
+sumSE.moist2 <- summarySE(env, measurevar = "moist_mean", groupvars = c('stand','block','site'))
+
+# plot the sample data with blocks as x-axis
+pdf(paste0(Rout,"/moist_sampledata.pdf"), height = 2.5, width = 4)
+ggplot(data = env) +
+  geom_jitter(aes(x = block, y = moist_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
+  geom_errorbar(data = sumSE.moist2, aes(x = block, ymin = moist_mean - ci, ymax = moist_mean + ci, col = stand), width = 0) +
+  geom_point(data = sumSE.moist2, aes(x = block, y = moist_mean, col = stand), size = 3) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'horizontal',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank()) +
+  labs(x = 'Block', y = 'Soil moisture (VWC)') +
+  guides(shape = FALSE) +
+  facet_grid(.~ site,scales = 'free')
+dev.off()
+
+
+#### model soil moisture
 m.moist1 <- lmer(logit(moist_mean) ~ stand + (1|site/block/transect), data = env)
 summary(m.moist1)
 AICc(m.moist1)
@@ -65,15 +89,12 @@ ranova(m.moist1)
 emm.moist1 <- data.frame(emmeans(m.moist1, ~ stand, type = 'response'))
 emm.moist1
 
-# calculate sample means and CIs
-sumSE.moist <- summarySE(env, measurevar = "moist_mean", groupvars = 'stand')
-sumSE.moist2 <- summarySE(env, measurevar = "moist_mean", groupvars = c('stand','block','site'))
-
 # plot the modeled estimates! 
+pdf(paste0(Rout,"/moist_modeled.pdf"), height = 2.5, width = 2.5)
 ggplot(data = env) +
-  geom_jitter(aes(x = stand, y = moist_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 2) +
+  geom_jitter(aes(x = stand, y = moist_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
   geom_errorbar(data = emm.moist1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
-  geom_point(data = emm.moist1, aes(x = stand, y = response, col = stand), size = 4) +
+  geom_point(data = emm.moist1, aes(x = stand, y = response, col = stand), size = 3.5) +
   # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
   # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
   scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
@@ -85,12 +106,22 @@ ggplot(data = env) +
         axis.title.x = element_blank()) +
   labs(x = '', y = 'Soil moisture (VWC)') +
   guides(col = FALSE)
+dev.off()
+
+#### soil depth ####
+# histogram of soil depth
+hist((env$depth_mean))
+
+# calculate sample means and CIs
+sumSE.depth <- summarySE(env, measurevar = "depth_mean", groupvars = 'stand')
+sumSE.depth2 <- summarySE(env, measurevar = "depth_mean", groupvars = c('stand','block','site'))
 
 # plot the sample data with blocks as x-axis
+pdf(paste0(Rout,"/depth_sampledata.pdf"), height = 2.5, width = 4)
 ggplot(data = env) +
-  geom_jitter(aes(x = block, y = moist_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 2) +
-  geom_errorbar(data = sumSE.moist2, aes(x = block, ymin = moist_mean - ci, ymax = moist_mean + ci, col = stand), width = 0) +
-  geom_point(data = sumSE.moist2, aes(x = block, y = moist_mean, col = stand), size = 4) +
+  geom_jitter(aes(x = block, y = depth_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
+  geom_errorbar(data = sumSE.depth2, aes(x = block, ymin = depth_mean - ci, ymax = depth_mean + ci, col = stand), width = 0) +
+  geom_point(data = sumSE.depth2, aes(x = block, y = depth_mean, col = stand), size = 3) +
   # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
   # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
   scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
@@ -99,19 +130,16 @@ ggplot(data = env) +
         legend.direction = 'horizontal',
         legend.margin = margin(0,0,0,0),
         legend.title = element_blank()) +
-  labs(x = 'Block', y = 'Soil moisture (VWC)') +
+  labs(x = 'Block', y = 'Soil depth (cm)') +
   guides(shape = FALSE) +
   facet_grid(.~ site,scales = 'free')
+dev.off()
 
-#### soil depth ####
-# histogram of soil depth
-hist((env$depth_mean))
 
-# model soil depth
+#### model soil depth
 m.depth1 <- lmer(depth_mean ~ stand + (1|site/block/transect), data = env)
 summary(m.depth1)
 AICc(m.depth1)
-
 # same singular fit issue as above.
 
 # drop transect completely.
@@ -132,15 +160,12 @@ ranova(m.depth1)
 emm.depth1 <- data.frame(emmeans(m.depth1, ~ stand, type = 'response'))
 emm.depth1
 
-# calculate sample means and CIs
-sumSE.depth <- summarySE(env, measurevar = "depth_mean", groupvars = 'stand')
-sumSE.depth2 <- summarySE(env, measurevar = "depth_mean", groupvars = c('stand','block','site'))
-
 # plot the modeled estimates! 
+pdf(paste0(Rout,"/depth_modeled.pdf"), height = 2.5, width = 2.5)
 ggplot(data = env) +
-  geom_jitter(aes(x = stand, y = depth_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 2) +
+  geom_jitter(aes(x = stand, y = depth_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
   geom_errorbar(data = emm.depth1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
-  geom_point(data = emm.depth1, aes(x = stand, y = emmean, col = stand), size = 4) +
+  geom_point(data = emm.depth1, aes(x = stand, y = emmean, col = stand), size = 3.5) +
   # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
   # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
   scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
@@ -152,23 +177,7 @@ ggplot(data = env) +
         axis.title.x = element_blank()) +
   labs(x = '', y = 'Soil depth (cm)') +
   guides(col = FALSE)
-
-# plot the sample data with blocks as x-axis
-ggplot(data = env) +
-  geom_jitter(aes(x = block, y = depth_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 2) +
-  geom_errorbar(data = sumSE.depth2, aes(x = block, ymin = depth_mean - ci, ymax = depth_mean + ci, col = stand), width = 0) +
-  geom_point(data = sumSE.depth2, aes(x = block, y = depth_mean, col = stand), size = 4) +
-  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
-  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
-  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
-  theme_classic() +
-  theme(legend.position = 'bottom',
-        legend.direction = 'horizontal',
-        legend.margin = margin(0,0,0,0),
-        legend.title = element_blank()) +
-  labs(x = 'Block', y = 'Soil depth (cm)') +
-  guides(shape = FALSE) +
-  facet_grid(.~ site,scales = 'free')
+dev.off()
 
 #### regress soil moisture on depth ####
 m.moist2 <- lmer(logit(moist_mean) ~ depth_mean * stand + (1|site/block:transect), data = env)
@@ -189,6 +198,7 @@ emm.moist2 <- predict(m.moist2, type = 'response') %>%
 df <- cbind(env,emm.moist2)
 
 # plot moisture as a function of depth and stand
+pdf(paste0(Rout,"/moist_depth.pdf"), height = 2.5, width = 4)
 ggplot(data = df) +
   geom_point(aes(x = depth_mean, y = moist_mean, col = stand, shape = site), alpha = 0.5, size = 2) +
   # geom_line(aes(x = depth_mean, y = emm.moist2, col = stand)) +
@@ -200,9 +210,8 @@ ggplot(data = df) +
   theme(legend.position = 'bottom',
         legend.direction = 'horizontal',
         legend.margin = margin(0,0,0,0),
-        legend.title = element_blank(),
-        axis.title.x = element_blank()) +
-  labs(x = '', y = 'Soil moisture (VWC)') +
+        legend.title = element_blank()) +
+  labs(x = 'Soil depth (cm)', y = 'Soil moisture (VWC)') +
   guides(col = FALSE) +
   facet_grid(.~ site)
-
+dev.off()
