@@ -37,7 +37,7 @@ sumSE.biomass <- summarySE(bms, measurevar = "biomass_gm2", groupvars = 'stand')
 sumSE.biomass2 <- summarySE(bms, measurevar = "biomass_gm2", groupvars = c('stand','block','site')) # aggregating to stand, block, site
 
 # plot the sample data with blocks as x-axis
-pdf(paste0(Rout,"/biomass_sampledata.pdf"), height = 2.5, width = 4)
+pdf(paste0(Rout,"/biomass/biomass_sampledata.pdf"), height = 2.5, width = 4)
 ggplot(data = bms) +
   geom_jitter(aes(x = block, y = biomass_gm2, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
   geom_errorbar(data = sumSE.biomass2, aes(x = block, ymin = biomass_gm2 - ci, ymax = biomass_gm2 + ci, col = stand), width = 0) +
@@ -86,17 +86,20 @@ ranova(m.biomass1)
 # m.biomass1 <- lmer(log(biomass_gm2) ~ stand * site + (1|block:transect), data = bms)
 # summary(m.biomass1)
 # AICc(m.biomass1)
-# # no significant interaction. just drop site completely?
-# m.biomass1 <- lmer(log(biomass_gm2) ~ stand + (1|block:transect), data = bms)
-# summary(m.biomass1)
-# AICc(m.biomass1)
+# no significant interaction. just drop site completely?
+m.biomass1 <- lmer(log(biomass_gm2) ~ stand + (1|block:transect), data = bms)
+summary(m.biomass1)
+AICc(m.biomass1)
 
 # calculate modeled means and confidence intervals
 emm.biomass1 <- data.frame(emmeans(m.biomass1, ~ stand, type = 'response'))
 emm.biomass1
 
+# make a table of the results
+tab_model(m.biomass1, linebreak = FALSE, p.val = 'satterthwaite', transform = NULL)
+
 # plot the modeled estimates! 
-pdf(paste0(Rout,"/biomass_modeled.pdf"), height = 2.5, width = 2.5)
+pdf(paste0(Rout,"/biomass/biomass_modeled.pdf"), height = 2.5, width = 2.5)
 ggplot(data = bms) +
   geom_jitter(aes(x = stand, y = biomass_gm2, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
   geom_errorbar(data = emm.biomass1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
@@ -127,7 +130,7 @@ emm.biomass2 <- predict(m.biomass2, type = 'response')
 df <- cbind(bms,emm.biomass2)
 
 # plot biomass as a function of depth and stand
-pdf(paste0(Rout,"/biomass_depth.pdf"), height = 2.5, width = 4)
+pdf(paste0(Rout,"/biomass/biomass_depth.pdf"), height = 2.5, width = 4)
 ggplot(data = df) +
   geom_point(aes(x = depth, y = biomass_gm2, col = stand, shape = site), alpha = 0.5, size = 2) +
   # geom_line(aes(x = depth_mean, y = emm.biomass2, col = stand)) +
@@ -146,7 +149,7 @@ ggplot(data = df) +
 dev.off()
 
 # plot biomass as a function of moisture and stand
-pdf(paste0(Rout,"/biomass_moist.pdf"), height = 2.5, width = 4)
+pdf(paste0(Rout,"/biomass/biomass_moist.pdf"), height = 2.5, width = 4)
 ggplot(data = df) +
   geom_point(aes(x = moist, y = biomass_gm2, col = stand, shape = site), alpha = 0.5, size = 2) +
   # geom_line(aes(x = depth_mean, y = emm.biomass2, col = stand)) +

@@ -1,4 +1,4 @@
-# updated 2021-09-24
+# updated 2021-09-27
 # preliminary analyses for environmental data
 library(lme4)
 library(lmerTest)
@@ -8,6 +8,7 @@ library(MuMIn)
 library(Rmisc)
 library(ggplot2)
 library(dplyr)
+library(sjPlot)
 
 # set working directory to cleaned data folder
 setwd("C:/Users/paulr/Dropbox (University of Oregon)/OREGON/Postdoc/USDA-NIFA project/Natural Site Survey/Reed_USDA-NIFA_NaturalSurvey/Data-cleaned")
@@ -34,12 +35,19 @@ hist((env$moist_mean))
 # use a logit transformation, or beta regression from glmmTMB
 hist(logit(env$moist_mean)) # looks good! logit transform is a lot easier.
 
+# set up logit back-transform function for summary table purposes
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  prob <- odds / (1 + odds)
+  return(prob)
+}
+
 # calculate sample means and CIs
 sumSE.moist <- summarySE(env, measurevar = "moist_mean", groupvars = 'stand')
 sumSE.moist2 <- summarySE(env, measurevar = "moist_mean", groupvars = c('stand','block','site'))
 
 # plot the sample data with blocks as x-axis
-pdf(paste0(Rout,"/moist_sampledata.pdf"), height = 2.5, width = 4)
+pdf(paste0(Rout,"/environmental/moist_sampledata.pdf"), height = 2.5, width = 4)
 ggplot(data = env) +
   geom_jitter(aes(x = block, y = moist_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
   geom_errorbar(data = sumSE.moist2, aes(x = block, ymin = moist_mean - ci, ymax = moist_mean + ci, col = stand), width = 0) +
@@ -89,8 +97,11 @@ ranova(m.moist1)
 emm.moist1 <- data.frame(emmeans(m.moist1, ~ stand, type = 'response'))
 emm.moist1
 
+# make a table of the results
+tab_model(m.moist1, linebreak = FALSE, p.val = 'satterthwaite', transform = NULL)
+
 # plot the modeled estimates! 
-pdf(paste0(Rout,"/moist_modeled.pdf"), height = 2.5, width = 2.5)
+pdf(paste0(Rout,"/environmental/moist_modeled.pdf"), height = 2.5, width = 2.5)
 ggplot(data = env) +
   geom_jitter(aes(x = stand, y = moist_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
   geom_errorbar(data = emm.moist1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
@@ -117,7 +128,7 @@ sumSE.depth <- summarySE(env, measurevar = "depth_mean", groupvars = 'stand')
 sumSE.depth2 <- summarySE(env, measurevar = "depth_mean", groupvars = c('stand','block','site'))
 
 # plot the sample data with blocks as x-axis
-pdf(paste0(Rout,"/depth_sampledata.pdf"), height = 2.5, width = 4)
+pdf(paste0(Rout,"/environmental/depth_sampledata.pdf"), height = 2.5, width = 4)
 ggplot(data = env) +
   geom_jitter(aes(x = block, y = depth_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
   geom_errorbar(data = sumSE.depth2, aes(x = block, ymin = depth_mean - ci, ymax = depth_mean + ci, col = stand), width = 0) +
@@ -152,16 +163,25 @@ AICc(m.depth1)
 m.depth1 <- lmer(depth_mean ~ stand + (1|site/block:transect), data = env)
 summary(m.depth1)
 AICc(m.depth1)
-# still have singular fit... but AICc is lowest.
-Anova(m.depth1,type=2,test.statistic = 'F')
-ranova(m.depth1)
+
+# # check site as fixed interaction
+# m.depth1 <- lmer(depth_mean ~ stand * site + (1|block:transect), data = env)
+# summary(m.depth1)
+# AICc(m.depth1)
+# # no significant interaction. just drop site completely?
+m.depth1 <- lmer(depth_mean ~ stand + (1|block:transect), data = env)
+summary(m.depth1)
+AICc(m.depth1)
 
 # calculate modeled means and confidence intervals
 emm.depth1 <- data.frame(emmeans(m.depth1, ~ stand, type = 'response'))
 emm.depth1
 
+# make a table of the results
+tab_model(m.depth1, linebreak = FALSE, p.val = 'satterthwaite', transform = NULL)
+
 # plot the modeled estimates! 
-pdf(paste0(Rout,"/depth_modeled.pdf"), height = 2.5, width = 2.5)
+pdf(paste0(Rout,"/environmental/depth_modeled.pdf"), height = 2.5, width = 2.5)
 ggplot(data = env) +
   geom_jitter(aes(x = stand, y = depth_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
   geom_errorbar(data = emm.depth1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
@@ -187,18 +207,12 @@ AICc(m.moist2)
 summary(m.moist2)
 
 # calculate predicted moisture
-logit2prob <- function(logit){
-  odds <- exp(logit)
-  prob <- odds / (1 + odds)
-  return(prob)
-}
-
 emm.moist2 <- predict(m.moist2, type = 'response') %>%
   logit2prob(.)
 df <- cbind(env,emm.moist2)
 
 # plot moisture as a function of depth and stand
-pdf(paste0(Rout,"/moist_depth.pdf"), height = 2.5, width = 4)
+pdf(paste0(Rout,"/environmental/moist_depth.pdf"), height = 2.5, width = 4)
 ggplot(data = df) +
   geom_point(aes(x = depth_mean, y = moist_mean, col = stand, shape = site), alpha = 0.5, size = 2) +
   # geom_line(aes(x = depth_mean, y = emm.moist2, col = stand)) +
