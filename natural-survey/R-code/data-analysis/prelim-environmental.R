@@ -47,7 +47,7 @@ sumSE.moist <- summarySE(env, measurevar = "moist_mean", groupvars = 'stand')
 sumSE.moist2 <- summarySE(env, measurevar = "moist_mean", groupvars = c('stand','block','site'))
 
 # plot the sample data with blocks as x-axis
-pdf(paste0(Rout,"/environmental/moist_sampledata.pdf"), height = 2.5, width = 4)
+# pdf(paste0(Rout,"/environmental/moist_sampledata.pdf"), height = 2.5, width = 4)
 ggplot(data = env) +
   geom_jitter(aes(x = block, y = moist_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
   geom_errorbar(data = sumSE.moist2, aes(x = block, ymin = moist_mean - ci, ymax = moist_mean + ci, col = stand), width = 0) +
@@ -63,7 +63,7 @@ ggplot(data = env) +
   labs(x = 'Block', y = 'Soil moisture (VWC)') +
   guides(shape = FALSE) +
   facet_grid(.~ site,scales = 'free')
-dev.off()
+# dev.off()
 
 
 #### model soil moisture
@@ -101,7 +101,7 @@ emm.moist1
 tab_model(m.moist1, linebreak = FALSE, p.val = 'satterthwaite', transform = NULL)
 
 # plot the modeled estimates! 
-pdf(paste0(Rout,"/environmental/moist_modeled.pdf"), height = 2.5, width = 2.5)
+# pdf(paste0(Rout,"/environmental/moist_modeled.pdf"), height = 2.5, width = 2.5)
 ggplot(data = env) +
   geom_jitter(aes(x = stand, y = moist_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
   geom_errorbar(data = emm.moist1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
@@ -117,7 +117,7 @@ ggplot(data = env) +
         axis.title.x = element_blank()) +
   labs(x = '', y = 'Soil moisture (VWC)') +
   guides(col = FALSE)
-dev.off()
+# dev.off()
 
 #### soil depth ####
 # histogram of soil depth
@@ -128,7 +128,7 @@ sumSE.depth <- summarySE(env, measurevar = "depth_mean", groupvars = 'stand')
 sumSE.depth2 <- summarySE(env, measurevar = "depth_mean", groupvars = c('stand','block','site'))
 
 # plot the sample data with blocks as x-axis
-pdf(paste0(Rout,"/environmental/depth_sampledata.pdf"), height = 2.5, width = 4)
+# pdf(paste0(Rout,"/environmental/depth_sampledata.pdf"), height = 2.5, width = 4)
 ggplot(data = env) +
   geom_jitter(aes(x = block, y = depth_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
   geom_errorbar(data = sumSE.depth2, aes(x = block, ymin = depth_mean - ci, ymax = depth_mean + ci, col = stand), width = 0) +
@@ -144,7 +144,7 @@ ggplot(data = env) +
   labs(x = 'Block', y = 'Soil depth (cm)') +
   guides(shape = FALSE) +
   facet_grid(.~ site,scales = 'free')
-dev.off()
+# dev.off()
 
 
 #### model soil depth
@@ -181,7 +181,7 @@ emm.depth1
 tab_model(m.depth1, linebreak = FALSE, p.val = 'satterthwaite', transform = NULL)
 
 # plot the modeled estimates! 
-pdf(paste0(Rout,"/environmental/depth_modeled.pdf"), height = 2.5, width = 2.5)
+# pdf(paste0(Rout,"/environmental/depth_modeled.pdf"), height = 2.5, width = 2.5)
 ggplot(data = env) +
   geom_jitter(aes(x = stand, y = depth_mean, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
   geom_errorbar(data = emm.depth1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
@@ -197,35 +197,34 @@ ggplot(data = env) +
         axis.title.x = element_blank()) +
   labs(x = '', y = 'Soil depth (cm)') +
   guides(col = FALSE)
-dev.off()
+# dev.off()
 
 #### regress soil moisture on depth ####
 m.moist2 <- lmer(logit(moist_mean) ~ depth_mean * stand + (1|site/block:transect), data = env)
-AICc(m.moist2)
-m.moist2 <- lmer(logit(moist_mean) ~ depth_mean + stand + (1|site/block:transect), data = env)
-AICc(m.moist2)
 summary(m.moist2)
 
+# make a table of the results
+tab_model(m.moist2, linebreak = FALSE, p.val = 'satterthwaite', transform = NULL)
+
 # calculate predicted moisture
-emm.moist2 <- predict(m.moist2, type = 'response') %>%
-  logit2prob(.)
-df <- cbind(env,emm.moist2)
+nd <- expand.grid(depth_mean = seq(min(env$depth_mean), max(env$depth_mean), length.out = 20),
+                  stand = levels(env$stand))
+nd$prd <- logit2prob(predict(m.moist2, newdata = nd, re.form = NA, type = "response"))
 
 # plot moisture as a function of depth and stand
-pdf(paste0(Rout,"/environmental/moist_depth.pdf"), height = 2.5, width = 4)
+pdf(paste0(Rout,"/environmental/moist_depth.pdf"), height = 3.5, width = 3.5)
 ggplot(data = df) +
   geom_point(aes(x = depth_mean, y = moist_mean, col = stand, shape = site), alpha = 0.5, size = 2) +
-  # geom_line(aes(x = depth_mean, y = emm.moist2, col = stand)) +
+  geom_line(data = nd, aes(x = depth_mean, y = prd, col = stand)) +
   # geom_point(data = emm.moist1, aes(x = stand, y = response, col = stand), size = 4) +
   # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
   # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
   scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
   theme_classic() +
   theme(legend.position = 'bottom',
-        legend.direction = 'horizontal',
+        legend.direction = 'vertical',
         legend.margin = margin(0,0,0,0),
         legend.title = element_blank()) +
   labs(x = 'Soil depth (cm)', y = 'Soil moisture (VWC)') +
-  guides(col = FALSE) +
-  facet_grid(.~ site)
+  guides()
 dev.off()

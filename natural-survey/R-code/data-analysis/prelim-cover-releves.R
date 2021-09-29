@@ -1,4 +1,4 @@
-# created 2021-09-27
+# updated 2021-09-29
 # preliminary analyses for releve cover/richness
 library(vegan)
 library(lme4)
@@ -9,6 +9,9 @@ library(MuMIn)
 library(Rmisc)
 library(ggplot2)
 library(dplyr)
+library(tidyr)
+library(stringr)
+library(cowplot)
 
 # set working directory to cleaned data folder
 setwd("C:/Users/paulr/Dropbox (University of Oregon)/OREGON/Postdoc/USDA-NIFA project/Natural Site Survey/Reed_USDA-NIFA_NaturalSurvey/Data-cleaned")
@@ -49,54 +52,62 @@ colnames(fxgrps)[12:31] <- cov.wide[3,2:21]
 fxgrps[,12:31] <- sapply(fxgrps[,12:31],as.numeric)
 
 #### calculate total and functional group covers ####
-cover$covTotal <- colSums(fxgrps[,12:31])
-cover$covNative <- colSums(fxgrps[fxgrps$nativity=="Native",12:31])
-cover$covIntro <- colSums(fxgrps[fxgrps$nativity=="Introduced",12:31])
-cover$covAnnual <- colSums(fxgrps[fxgrps$duration=="Annual",12:31])
-cover$covPeren <- colSums(fxgrps[fxgrps$duration=="Perennial",12:31])
-cover$covGram <- colSums(fxgrps[fxgrps$form2=="Graminoid",12:31])
-cover$covForb <- colSums(fxgrps[fxgrps$form2=="Forb",12:31])
-cover$covNatAnn <- colSums(fxgrps[fxgrps$nativity=="Native"&fxgrps$duration=="Annual",12:31])
-cover$covNatPer <- colSums(fxgrps[fxgrps$nativity=="Native"&fxgrps$duration=="Perennial",12:31])
-cover$covIntAnn <- colSums(fxgrps[fxgrps$nativity=="Introduced"&fxgrps$duration=="Annual",12:31])
-cover$covIntPer <- colSums(fxgrps[fxgrps$nativity=="Introduced"&fxgrps$duration=="Perennial",12:31])
-cover$covAG <- colSums(fxgrps[fxgrps$form2=="Graminoid"&fxgrps$duration=="Annual",12:31])
-cover$covPG <- colSums(fxgrps[fxgrps$form2=="Graminoid"&fxgrps$duration=="Perennial",12:31])
-cover$covAF <- colSums(fxgrps[fxgrps$form2=="Forb"&fxgrps$duration=="Annual",12:31])
-cover$covPF <- colSums(fxgrps[fxgrps$form2=="Forb"&fxgrps$duration=="Perennial",12:31])
-cover$covNAG <- colSums(fxgrps[fxgrps$funcgroup=="NAG",12:31])
-cover$covNAF <- colSums(fxgrps[fxgrps$funcgroup=="NAF",12:31])
-cover$covNPG <- colSums(fxgrps[fxgrps$funcgroup=="NPG",12:31])
-cover$covNPF <- colSums(fxgrps[fxgrps$funcgroup=="NPF",12:31])
-cover$covIAG <- colSums(fxgrps[fxgrps$funcgroup=="IAG",12:31])
-cover$covIAF <- colSums(fxgrps[fxgrps$funcgroup=="IAF",12:31])
-cover$covIPG <- colSums(fxgrps[fxgrps$funcgroup=="IPG",12:31])
-cover$covIPF <- colSums(fxgrps[fxgrps$funcgroup=="IPF",12:31])
-cover$covWoody <- colSums(fxgrps[fxgrps$funcgroup=="Woody",12:31])
-cover$covUnk <- colSums(fxgrps[fxgrps$funcgroup=="Unk",12:31])
+cover$Total <- colSums(fxgrps[,12:31])
+cover$NATNative <- colSums(fxgrps[fxgrps$nativity=="Native",12:31])
+cover$NATIntroduced <- colSums(fxgrps[fxgrps$nativity=="Introduced",12:31])
+cover$NATUnknown <- colSums(fxgrps[fxgrps$nativity=="Unknown",12:31])
+cover$DURAnnual <- colSums(fxgrps[fxgrps$duration2=="Annual",12:31])
+cover$DURPerennial <- colSums(fxgrps[fxgrps$duration2=="Perennial",12:31])
+cover$DURBiennial <- colSums(fxgrps[fxgrps$duration2=="Biennial",12:31])
+cover$DURUnknown <- colSums(fxgrps[fxgrps$duration2=="Unknown",12:31])
+cover$FORGraminoid <- colSums(fxgrps[fxgrps$form2=="Graminoid",12:31])
+cover$FORForb <- colSums(fxgrps[fxgrps$form2=="Forb",12:31])
+cover$FORWoody <- colSums(fxgrps[fxgrps$form2=="Woody",12:31])
+cover$NatAnn <- colSums(fxgrps[fxgrps$nativity=="Native"&fxgrps$duration2=="Annual",12:31])
+cover$NatPer <- colSums(fxgrps[fxgrps$nativity=="Native"&fxgrps$duration2=="Perennial",12:31])
+cover$IntAnn <- colSums(fxgrps[fxgrps$nativity=="Introduced"&fxgrps$duration2=="Annual",12:31])
+cover$IntPer <- colSums(fxgrps[fxgrps$nativity=="Introduced"&fxgrps$duration2=="Perennial",12:31])
+cover$AG <- colSums(fxgrps[fxgrps$form2=="Graminoid"&fxgrps$duration2=="Annual",12:31])
+cover$PG <- colSums(fxgrps[fxgrps$form2=="Graminoid"&fxgrps$duration2=="Perennial",12:31])
+cover$AF <- colSums(fxgrps[fxgrps$form2=="Forb"&fxgrps$duration2=="Annual",12:31])
+cover$PF <- colSums(fxgrps[fxgrps$form2=="Forb"&fxgrps$duration2=="Perennial",12:31])
+cover$NAG <- colSums(fxgrps[fxgrps$funcgroup=="NAG",12:31])
+cover$NAF <- colSums(fxgrps[fxgrps$funcgroup=="NAF",12:31])
+cover$NPG <- colSums(fxgrps[fxgrps$funcgroup=="NPG",12:31])
+cover$NPF <- colSums(fxgrps[fxgrps$funcgroup=="NPF",12:31])
+cover$IAG <- colSums(fxgrps[fxgrps$funcgroup=="IAG",12:31])
+cover$IAF <- colSums(fxgrps[fxgrps$funcgroup=="IAF",12:31])
+cover$IPG <- colSums(fxgrps[fxgrps$funcgroup=="IPG",12:31])
+cover$IPF <- colSums(fxgrps[fxgrps$funcgroup=="IPF",12:31])
+cover$Woody <- colSums(fxgrps[fxgrps$funcgroup=="Woody",12:31])
+cover$Unk <- colSums(fxgrps[fxgrps$funcgroup=="Unk",12:31])
 
 #### calculate relative covers ####
 relcover<-cover[,1:6]
-relcover$relNative<-cover$covNative/cover$covTotal
-relcover$relIntro<-cover$covIntro/cover$covTotal
-relcover$relAnnual<-cover$covAnnual/cover$covTotal
-relcover$relPeren<-cover$covPeren/cover$covTotal
-relcover$relGram<-cover$covGram/cover$covTotal
-relcover$relForb<-cover$covForb/cover$covTotal
-relcover$relNatAnn<-cover$covNatAnn/cover$covTotal
-relcover$relNatPer<-cover$covNatPer/cover$covTotal
-relcover$relIntAnn<-cover$covIntAnn/cover$covTotal
-relcover$relIntPer<-cover$covIntPer/cover$covTotal
-relcover$relNAG<-cover$covNAG/cover$covTotal
-relcover$relNAF<-cover$covNAF/cover$covTotal
-relcover$relNPG<-cover$covNPG/cover$covTotal
-relcover$relNPF<-cover$covNPF/cover$covTotal
-relcover$relIAG<-cover$covIAG/cover$covTotal
-relcover$relIAF<-cover$covIAF/cover$covTotal
-relcover$relIPG<-cover$covIPG/cover$covTotal
-relcover$relIPF<-cover$covIPF/cover$covTotal
-relcover$relWoody<-cover$covWoody/cover$covTotal
-relcover$relUnk<-cover$covUnk/cover$covTotal
+relcover$NATNative<-cover$NATNative/cover$Total
+relcover$NATIntroduced<-cover$NATIntroduced/cover$Total
+relcover$NATUnknown<-cover$NATUnknown/cover$Total
+relcover$DURAnnual<-cover$DURAnnual/cover$Total
+relcover$DURPerennial<-cover$DURPerennial/cover$Total
+relcover$DURBiennial<-cover$DURBiennial/cover$Total
+relcover$DURUnknown<-cover$DURUnknown/cover$Total
+relcover$FORGraminoid<-cover$FORGraminoid/cover$Total
+relcover$FORForb<-cover$FORForb/cover$Total
+relcover$FORWoody<-cover$FORWoody/cover$Total
+relcover$NatAnn<-cover$NatAnn/cover$Total
+relcover$NatPer<-cover$NatPer/cover$Total
+relcover$IntAnn<-cover$IntAnn/cover$Total
+relcover$IntPer<-cover$IntPer/cover$Total
+relcover$NAG<-cover$NAG/cover$Total
+relcover$NAF<-cover$NAF/cover$Total
+relcover$NPG<-cover$NPG/cover$Total
+relcover$NPF<-cover$NPF/cover$Total
+relcover$IAG<-cover$IAG/cover$Total
+relcover$IAF<-cover$IAF/cover$Total
+relcover$IPG<-cover$IPG/cover$Total
+relcover$IPF<-cover$IPF/cover$Total
+relcover$Woody<-cover$Woody/cover$Total
+relcover$Unk<-cover$Unk/cover$Total
 
 
 
@@ -295,3 +306,98 @@ ggplot(data = cover) +
   labs(x = '', y = 'Evenness (relevés)') +
   guides(col = FALSE)
 dev.off()
+
+#### Annual:Perennial ratio ####
+relcover.DUR <- gather(relcover, Duration, value, DURAnnual:DURUnknown, factor_key = TRUE)
+relcover.DUR$Duration <- gsub( "DUR", "", as.character(relcover.DUR$Duration))
+relcover.DUR$Duration <- factor(relcover.DUR$Duration, levels = c('Annual', 'Perennial', 'Biennial', 'Unknown'))
+
+# sumSE.DUR <- summarySE(relcover.DUR, measurevar="value", groupvars = c('site','stand','Duration'))
+# sumSE.DUR$Duration <- factor(sumSE.DUR$Duration, levels = c('Annual', 'Perennial', 'Biennial', 'Unknown'))
+# 
+# ggplot(sumSE.DUR, aes(x = stand, y = value, fill = Duration))+
+#   scale_fill_manual(values = c("goldenrod1","darkolivegreen4",'blue','grey')) +
+#   geom_bar(stat = "identity")+
+#   scale_y_continuous(expand=c(0,0),limits=c(0,1),breaks=c(0,0.25,0.5,0.75,1))+
+#   labs(x="Stand",y="Relative cover",fill="")+
+#   theme_bw() +
+#   theme(legend.position = 'top') +
+#   facet_grid(.~ site,scales = 'free')
+relcover.DUR$stand2 <- relcover.DUR$stand
+levels(relcover.DUR$stand2) <- c("Annual stand", "Perennial stand")
+
+# pdf(paste0(Rout,"/cover-releves/relcoverDUR-releve_sampledata.pdf"), height = 4, width = 4)
+ggplot(data = relcover.DUR, aes(x = block, y = value, fill = Duration, group = stand2)) +
+  geom_bar(aes(x = block, y = value, group = stand2, fill = Duration), stat = "identity")+
+  scale_fill_manual(values = c("goldenrod1","darkolivegreen4",'blue','grey')) +
+  scale_y_continuous(expand=c(0,0),limits=c(0,1),breaks=c(0,0.25,0.5,0.75)) +
+  theme_bw() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'horizontal',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank(),
+        panel.grid = element_blank()) +
+  labs(x = 'Block', y = 'Relative cover (relevés)') +
+  guides(shape = FALSE) +
+  facet_grid(stand2 ~ site, scales = 'free')
+# dev.off()
+
+#### cover broken down by species ####
+cov.long.spp <- cbind(site=cov.long$site,cov.long[,11:116])
+cov.long.spp <- aggregate(. ~ site, data = cov.long.spp, FUN = sum, na.rm = TRUE)
+
+# go from wide to long
+cov.spp <- gather(cov.long.spp, species, cover, Achillea.millefolium:Wyethia.angustifolia, factor_key=TRUE)
+
+# sort by site and species
+cov.spp <- cov.spp[order(cov.spp$site, cov.spp$species),]
+
+# append fxgrps data to it
+cov.spp <- cbind(cov.spp[,-2], rbind(fxgrps[,1:11],fxgrps[,1:11]))
+
+# plot species ordered by cover
+# cov.spp$funcgroup <- factor(cov.spp$funcgroup, 
+#                             levels = c('NPF','IPF','NAF','IBF','IAF','NPG','IPG','IAG','Woody','Unk'))
+cov.spp$funcgroup <- factor(cov.spp$funcgroup, 
+                            levels = c('NPF','NPG','NAF','IPG','IPF','IAG','IBF','Woody','IAF','Unk'))
+
+lgd <- ggplot(data = cov.spp[cov.spp$site=='Pisgah' & !cov.spp$cover==0,], aes(x = reorder(species_complete, cover),y = cover, fill = funcgroup)) +
+  geom_bar(stat='identity',width = 0.5) +
+  scale_fill_manual(values = c('goldenrod3','darkgreen','goldenrod1','palegreen3','mediumpurple4','palegreen1','mediumpurple3','chocolate4','mediumpurple1','gray60'))+
+  theme_bw()+theme(legend.position='top',
+                   axis.text.y = element_text(face='italic'))+
+  labs(x='',fill='',y='Total Cover')+
+  scale_y_log10() +
+  facet_grid(.~site) +
+  coord_flip()
+lgd<-get_legend(lgd)
+lgd.grid <- plot_grid(lgd)
+lgd.grid
+
+sp.pisgah <- ggplot(data = cov.spp[cov.spp$site=='Pisgah' & !cov.spp$cover==0,], aes(x = reorder(species_complete, cover),y = cover, fill = funcgroup)) +
+  geom_bar(stat='identity',width = 0.5) +
+  scale_fill_manual(values = c('goldenrod3','darkgreen','goldenrod1','palegreen3','mediumpurple4','palegreen1','mediumpurple3','chocolate4','mediumpurple1','gray60'))+
+  theme_bw()+theme(legend.position='none',
+                   axis.text.y = element_text(face='italic'))+
+  labs(x='',fill='',y='Total Cover')+
+  scale_y_log10() +
+  facet_grid(.~site) +
+  coord_flip()
+sp.pisgah
+
+sp.SEM <- ggplot(data = cov.spp[cov.spp$site=='South Eugene Meadows' & !cov.spp$cover==0,], aes(x = reorder(species_complete, cover),y = cover, fill = funcgroup)) +
+  geom_bar(stat='identity',width = 0.5) +
+  scale_fill_manual(values = c('goldenrod3','darkgreen','goldenrod1','palegreen3','mediumpurple4','palegreen1','mediumpurple3','chocolate4','mediumpurple1','gray60'))+
+  theme_bw()+theme(legend.position='none',
+                   axis.text.y = element_text(face='italic'))+
+  labs(x='',fill='',y='Total Cover')+
+  scale_y_log10() +
+  facet_grid(.~site) +
+  coord_flip()
+sp.SEM
+
+sp.plots <- plot_grid(sp.pisgah, sp.SEM)
+sp.plots <- plot_grid(lgd.grid, sp.plots, nrow = 2,
+                      rel_heights = c(0.1,1))
+
+ggsave(sp.plots, file=paste0(Rout,"/cover-releves/sp-plots.pdf"),height=10,width=10)
