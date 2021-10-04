@@ -1,4 +1,4 @@
-# created 2021-09-27
+# modified 2021-10-04
 # preliminary analyses for plot cover/richness
 library(vegan)
 library(lme4)
@@ -374,3 +374,233 @@ ggplot(data = cover) +
   labs(x = '', y = "Simpson's Evenness (plots)") +
   guides(col = FALSE)
 dev.off()
+
+#### Native richness ####
+mtrx.nat <- subset(fxgrps, nativity =='Native') %>%
+  t(.) %>%
+  .[12:71,] %>%
+  as.data.frame(.) %>%
+  sapply(.,as.numeric) %>%
+  as.data.frame(.)
+
+cover$rich.nat <- specnumber(mtrx.nat)
+
+# histogram of native richness
+hist(sqrt(cover$rich.nat))
+
+# calculate stand means and CIs
+sumSE.rich.nat <- summarySE(cover, measurevar = "rich.nat", groupvars = 'stand') # just aggregating to stand
+sumSE.rich.nat2 <- summarySE(cover, measurevar = "rich.nat", groupvars = c('stand','block','site')) # aggregating to stand, block, site
+
+pdf(paste0(Rout,"/cover-plots/richness-native-plot_sampledata.pdf"), height = 2.5, width = 4)
+ggplot(data = cover) +
+  geom_jitter(aes(x = block, y = rich.nat, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
+  geom_errorbar(data = sumSE.rich.nat2, aes(x = block, ymin = rich.nat - ci, ymax = rich.nat + ci, col = stand), width = 0) +
+  geom_point(data = sumSE.rich.nat2, aes(x = block, y = rich.nat, col = stand), size = 3) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'horizontal',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank()) +
+  labs(x = 'Block', y = 'Native Richness (plots)') +
+  guides(shape = FALSE) +
+  facet_grid(.~ site,scales = 'free')
+dev.off()
+
+# model native richness
+m.rich.nat1 <- lmer(sqrt(rich.nat+1) ~ stand + (1|site/block/transect), data = cover)
+summary(m.rich.nat1)
+AICc(m.rich.nat1)
+plot(m.rich.nat1)
+
+# include the interaction of block and transect nested within site
+m.rich.nat1 <- lmer(sqrt(rich.nat+1) ~ stand + (1|site/block:transect), data = cover)
+summary(m.rich.nat1)
+AICc(m.rich.nat1)
+Anova(m.rich.nat1,type=3,test.statistic = 'F')
+ranova(m.rich.nat1)
+
+# calculate modeled means and confidence intervals
+emm.rich.nat1 <- data.frame(emmeans(m.rich.nat1, ~ stand, type = 'response'))
+emm.rich.nat1
+
+# make a table of the results
+tab_model(m.rich.nat1, linebreak = FALSE, p.val = 'satterthwaite', transform = NULL)
+
+# plot the modeled estimates! 
+pdf(paste0(Rout,"/cover-plots/richness-native-plot_modeled.pdf"), height = 2.5, width = 2.5)
+ggplot(data = cover) +
+  geom_jitter(aes(x = stand, y = rich.nat, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
+  geom_errorbar(data = emm.rich.nat1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
+  geom_point(data = emm.rich.nat1, aes(x = stand, y = response, col = stand), size = 3.5) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'vertical',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank(),
+        axis.title.x = element_blank()) +
+  labs(x = '', y = 'Native Richness (plots)') +
+  guides(col = FALSE)
+dev.off()
+
+#### Forb richness ####
+mtrx.forb <- subset(fxgrps, form =='Forb') %>%
+  t(.) %>%
+  .[12:71,] %>%
+  as.data.frame(.) %>%
+  sapply(.,as.numeric) %>%
+  as.data.frame(.)
+
+cover$rich.forb <- specnumber(mtrx.forb)
+
+# histogram of forb richness
+hist(sqrt(cover$rich.forb))
+
+# calculate stand means and CIs
+sumSE.rich.forb <- summarySE(cover, measurevar = "rich.forb", groupvars = 'stand') # just aggregating to stand
+sumSE.rich.forb2 <- summarySE(cover, measurevar = "rich.forb", groupvars = c('stand','block','site')) # aggregating to stand, block, site
+
+pdf(paste0(Rout,"/cover-plots/richness-forb-plot_sampledata.pdf"), height = 2.5, width = 4)
+ggplot(data = cover) +
+  geom_jitter(aes(x = block, y = rich.forb, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
+  geom_errorbar(data = sumSE.rich.forb2, aes(x = block, ymin = rich.forb - ci, ymax = rich.forb + ci, col = stand), width = 0) +
+  geom_point(data = sumSE.rich.forb2, aes(x = block, y = rich.forb, col = stand), size = 3) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'horizontal',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank()) +
+  labs(x = 'Block', y = 'Forb Richness (plots)') +
+  guides(shape = FALSE) +
+  facet_grid(.~ site,scales = 'free')
+dev.off()
+
+# model forb richness
+m.rich.forb1 <- lmer(sqrt(rich.forb+1) ~ stand + (1|site/block/transect), data = cover)
+summary(m.rich.forb1)
+AICc(m.rich.forb1)
+plot(m.rich.forb1)
+
+# include the interaction of block and transect nested within site
+m.rich.forb1 <- lmer(sqrt(rich.forb+1) ~ stand + (1|site/block:transect), data = cover)
+summary(m.rich.forb1)
+AICc(m.rich.forb1)
+Anova(m.rich.forb1,type=3,test.statistic = 'F')
+ranova(m.rich.forb1)
+
+# drop site
+m.rich.forb1 <- lmer(sqrt(rich.forb+1) ~ stand + (1|block:transect), data = cover)
+summary(m.rich.forb1)
+AICc(m.rich.forb1)
+Anova(m.rich.forb1,type=3,test.statistic = 'F')
+ranova(m.rich.forb1)
+
+# calculate modeled means and confidence intervals
+emm.rich.forb1 <- data.frame(emmeans(m.rich.forb1, ~ stand, type = 'response'))
+emm.rich.forb1
+
+# make a table of the results
+tab_model(m.rich.forb1, linebreak = FALSE, p.val = 'satterthwaite', transform = NULL)
+
+# plot the modeled estimates! 
+pdf(paste0(Rout,"/cover-plots/richness-forb-plot_modeled.pdf"), height = 2.5, width = 2.5)
+ggplot(data = cover) +
+  geom_jitter(aes(x = stand, y = rich.forb, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
+  geom_errorbar(data = emm.rich.forb1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
+  geom_point(data = emm.rich.forb1, aes(x = stand, y = response, col = stand), size = 3.5) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'vertical',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank(),
+        axis.title.x = element_blank()) +
+  labs(x = '', y = 'forb Richness (plots)') +
+  guides(col = FALSE)
+dev.off()
+
+#### Native Forb richness ####
+mtrx.natforb <- subset(fxgrps, nativity == 'Native' & form =='Forb') %>%
+  t(.) %>%
+  .[12:71,] %>%
+  as.data.frame(.) %>%
+  sapply(.,as.numeric) %>%
+  as.data.frame(.)
+
+cover$rich.natforb <- specnumber(mtrx.natforb)
+
+# histogram of Native Forb richness
+hist(log(cover$rich.natforb+1))
+
+# calculate stand means and CIs
+sumSE.rich.natforb <- summarySE(cover, measurevar = "rich.natforb", groupvars = 'stand') # just aggregating to stand
+sumSE.rich.natforb2 <- summarySE(cover, measurevar = "rich.natforb", groupvars = c('stand','block','site')) # aggregating to stand, block, site
+
+pdf(paste0(Rout,"/cover-plots/richness-natforb-plot_sampledata.pdf"), height = 2.5, width = 4)
+ggplot(data = cover) +
+  geom_jitter(aes(x = block, y = rich.natforb, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
+  geom_errorbar(data = sumSE.rich.natforb2, aes(x = block, ymin = rich.natforb - ci, ymax = rich.natforb + ci, col = stand), width = 0) +
+  geom_point(data = sumSE.rich.natforb2, aes(x = block, y = rich.natforb, col = stand), size = 3) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'horizontal',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank()) +
+  labs(x = 'Block', y = 'Native Forb Richness (plots)') +
+  guides(shape = FALSE) +
+  facet_grid(.~ site,scales = 'free')
+dev.off()
+
+# model native forb richness
+m.rich.natforb1 <- lmer(log(rich.natforb+1) ~ stand + (1|site/block/transect), data = cover)
+summary(m.rich.natforb1)
+AICc(m.rich.natforb1)
+plot(m.rich.natforb1)
+
+# include the interaction of block and transect nested within site
+m.rich.natforb1 <- lmer(sqrt(rich.natforb+1) ~ stand + (1|site/block:transect), data = cover)
+summary(m.rich.natforb1)
+AICc(m.rich.natforb1)
+Anova(m.rich.natforb1,type=3,test.statistic = 'F')
+ranova(m.rich.natforb1)
+
+# calculate modeled means and confidence intervals
+emm.rich.natforb1 <- data.frame(emmeans(m.rich.natforb1, ~ stand, type = 'response'))
+emm.rich.natforb1
+
+# make a table of the results
+tab_model(m.rich.natforb1, linebreak = FALSE, p.val = 'satterthwaite', transform = NULL)
+
+# plot the modeled estimates! 
+pdf(paste0(Rout,"/cover-plots/richness-natforb-plot_modeled.pdf"), height = 2.5, width = 2.5)
+ggplot(data = cover) +
+  geom_jitter(aes(x = stand, y = rich.natforb, col = stand, shape = site), height = 0, width = 0.1, alpha = 0.5, size = 1.5) +
+  geom_errorbar(data = emm.rich.natforb1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
+  geom_point(data = emm.rich.natforb1, aes(x = stand, y = response, col = stand), size = 3.5) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'vertical',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank(),
+        axis.title.x = element_blank()) +
+  labs(x = '', y = 'Native Forb Richness (plots)') +
+  guides(col = FALSE)
+dev.off()
+

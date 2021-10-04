@@ -1,4 +1,4 @@
-# updated 2021-09-29
+# updated 2021-10-04
 # preliminary analyses for releve cover/richness
 library(vegan)
 library(lme4)
@@ -12,6 +12,7 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 library(cowplot)
+library(sjPlot)
 
 # set working directory to cleaned data folder
 setwd("C:/Users/paulr/Dropbox (University of Oregon)/OREGON/Postdoc/USDA-NIFA project/Natural Site Survey/Reed_USDA-NIFA_NaturalSurvey/Data-cleaned")
@@ -304,6 +305,221 @@ ggplot(data = cover) +
         legend.title = element_blank(),
         axis.title.x = element_blank()) +
   labs(x = '', y = 'Evenness (relevés)') +
+  guides(col = FALSE)
+dev.off()
+
+#### Native richness ####
+mtrx.nat <- subset(fxgrps, nativity =='Native') %>%
+  t(.) %>%
+  .[12:31,] %>%
+  as.data.frame(.) %>%
+  sapply(.,as.numeric) %>%
+  as.data.frame(.)
+
+cover$rich.nat <- specnumber(mtrx.nat)
+
+# histogram of native richness
+hist((cover$rich.nat))
+
+# calculate stand means and CIs
+sumSE.rich.nat <- summarySE(cover, measurevar = "rich.nat", groupvars = c('site','stand')) # aggregating to stand, block, site
+
+pdf(paste0(Rout,"/cover-releves/richness-native-releve_sampledata.pdf"), height = 2.5, width = 4)
+ggplot(data = cover) +
+  geom_line(aes(x = stand, y = rich.nat, group = block), alpha = 0.2)+
+  geom_point(aes(x = stand, y = rich.nat, shape = site), alpha = 0.2, size = 1.5) +
+  geom_errorbar(data = sumSE.rich.nat, aes(x = stand, ymin = rich.nat - ci, ymax = rich.nat + ci, col = stand), width = 0) +
+  geom_point(data = sumSE.rich.nat, aes(x = stand, y = rich.nat, col = stand), size = 3) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'horizontal',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank()) +
+  labs(x = 'Stand', y = 'Native Richness (relevés)') +
+  guides(shape = FALSE) +
+  facet_grid(.~ site,scales = 'free')
+dev.off()
+
+# model native richness
+m.rich.nat1 <- lmer(log(rich.nat) ~ stand + (1|site/block), data = cover)
+summary(m.rich.nat1)
+AICc(m.rich.nat1)
+plot(m.rich.nat1)
+
+# calculate modeled means and confidence intervals
+emm.rich.nat1 <- data.frame(emmeans(m.rich.nat1, ~ stand, type = 'response'))
+emm.rich.nat1
+
+# make a table of the results
+tab_model(m.rich.nat1, linebreak = FALSE, p.val = 'satterthwaite', transform = NULL)
+
+# plot the modeled estimates! 
+pdf(paste0(Rout,"/cover-releves/richness-native-releve_modeled.pdf"), height = 2.5, width = 2.5)
+ggplot(data = cover) +
+  geom_line(aes(x = stand, y = rich.nat, group = block), alpha = 0.2)+
+  geom_point(aes(x = stand, y = rich.nat, shape = site), alpha = 0.2, size = 1.5) +
+  geom_errorbar(data = emm.rich.nat1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
+  geom_point(data = emm.rich.nat1, aes(x = stand, y = response, col = stand), size = 3.5) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'vertical',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank(),
+        axis.title.x = element_blank()) +
+  labs(x = '', y = 'Native Richness (relevés)') +
+  guides(col = FALSE)
+dev.off()
+
+#### Forb richness ####
+mtrx.forb <- subset(fxgrps, form =='Forb') %>%
+  t(.) %>%
+  .[12:31,] %>%
+  as.data.frame(.) %>%
+  sapply(.,as.numeric) %>%
+  as.data.frame(.)
+
+cover$rich.forb <- specnumber(mtrx.forb)
+
+# histogram of Forb richness
+hist(log(cover$rich.forb))
+
+# calculate stand means and CIs
+sumSE.rich.forb <- summarySE(cover, measurevar = "rich.forb", groupvars = c('site','stand')) # aggregating to stand, block, site
+
+pdf(paste0(Rout,"/cover-releves/richness-forb-releve_sampledata.pdf"), height = 2.5, width = 4)
+ggplot(data = cover) +
+  geom_line(aes(x = stand, y = rich.forb, group = block), alpha = 0.2)+
+  geom_point(aes(x = stand, y = rich.forb, shape = site), alpha = 0.2, size = 1.5) +
+  geom_errorbar(data = sumSE.rich.forb, aes(x = stand, ymin = rich.forb - ci, ymax = rich.forb + ci, col = stand), width = 0) +
+  geom_point(data = sumSE.rich.forb, aes(x = stand, y = rich.forb, col = stand), size = 3) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'horizontal',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank()) +
+  labs(x = 'Stand', y = 'Forb Richness (relevés)') +
+  guides(shape = FALSE) +
+  facet_grid(.~ site,scales = 'free')
+dev.off()
+
+# model Forb richness
+m.rich.forb1 <- lmer(log(rich.forb) ~ stand + (1|site/block), data = cover)
+summary(m.rich.forb1)
+AICc(m.rich.forb1)
+plot(m.rich.forb1)
+# singular fit
+
+m.rich.forb1 <- lmer(log(rich.forb) ~ stand + (1|site), data = cover)
+summary(m.rich.forb1)
+AICc(m.rich.forb1)
+plot(m.rich.forb1)
+
+# calculate modeled means and confidence intervals
+emm.rich.forb1 <- data.frame(emmeans(m.rich.forb1, ~ stand, type = 'response'))
+emm.rich.forb1
+
+# make a table of the results
+tab_model(m.rich.forb1, linebreak = FALSE, p.val = 'satterthwaite', transform = NULL)
+
+# plot the modeled estimates! 
+pdf(paste0(Rout,"/cover-releves/richness-forb-releve_modeled.pdf"), height = 2.5, width = 2.5)
+ggplot(data = cover) +
+  geom_line(aes(x = stand, y = rich.forb, group = block), alpha = 0.2)+
+  geom_point(aes(x = stand, y = rich.forb, shape = site), alpha = 0.2, size = 1.5) +
+  geom_errorbar(data = emm.rich.forb1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
+  geom_point(data = emm.rich.forb1, aes(x = stand, y = response, col = stand), size = 3.5) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'vertical',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank(),
+        axis.title.x = element_blank()) +
+  labs(x = '', y = 'Forb Richness (relevés)') +
+  guides(col = FALSE)
+dev.off()
+
+#### Native forb richness ####
+mtrx.natforb <- subset(fxgrps, nativity == 'Native' & form =='Forb') %>%
+  t(.) %>%
+  .[12:31,] %>%
+  as.data.frame(.) %>%
+  sapply(.,as.numeric) %>%
+  as.data.frame(.)
+
+cover$rich.natforb <- specnumber(mtrx.natforb)
+
+# histogram of natforb richness
+hist(log(cover$rich.natforb))
+
+# calculate stand means and CIs
+sumSE.rich.natforb <- summarySE(cover, measurevar = "rich.natforb", groupvars = c('site','stand')) # aggregating to stand, block, site
+
+pdf(paste0(Rout,"/cover-releves/richness-natforb-releve_sampledata.pdf"), height = 2.5, width = 4)
+ggplot(data = cover) +
+  geom_line(aes(x = stand, y = rich.natforb, group = block), alpha = 0.2)+
+  geom_point(aes(x = stand, y = rich.natforb, shape = site), alpha = 0.2, size = 1.5) +
+  geom_errorbar(data = sumSE.rich.natforb, aes(x = stand, ymin = rich.natforb - ci, ymax = rich.natforb + ci, col = stand), width = 0) +
+  geom_point(data = sumSE.rich.natforb, aes(x = stand, y = rich.natforb, col = stand), size = 3) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'horizontal',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank()) +
+  labs(x = 'Stand', y = 'Native Forb Richness (relevés)') +
+  guides(shape = FALSE) +
+  facet_grid(.~ site,scales = 'free')
+dev.off()
+
+# model natforb richness
+m.rich.natforb1 <- lmer(log(rich.natforb) ~ stand + (1|site/block), data = cover)
+summary(m.rich.natforb1)
+AICc(m.rich.natforb1)
+plot(m.rich.natforb1)
+
+m.rich.natforb1 <- lmer(log(rich.natforb) ~ stand + (1|site), data = cover)
+summary(m.rich.natforb1)
+AICc(m.rich.natforb1)
+plot(m.rich.natforb1)
+
+# calculate modeled means and confidence intervals
+emm.rich.natforb1 <- data.frame(emmeans(m.rich.natforb1, ~ stand, type = 'response'))
+emm.rich.natforb1
+
+# make a table of the results
+tab_model(m.rich.natforb1, linebreak = FALSE, p.val = 'satterthwaite', transform = NULL)
+
+# plot the modeled estimates! 
+pdf(paste0(Rout,"/cover-releves/richness-natforb-releve_modeled.pdf"), height = 2.5, width = 2.5)
+ggplot(data = cover) +
+  geom_line(aes(x = stand, y = rich.natforb, group = block), alpha = 0.2)+
+  geom_point(aes(x = stand, y = rich.natforb, shape = site), alpha = 0.2, size = 1.5) +
+  geom_errorbar(data = emm.rich.natforb1, aes(x = stand, ymin = lower.CL, ymax = upper.CL, col = stand), width = 0) +
+  geom_point(data = emm.rich.natforb1, aes(x = stand, y = response, col = stand), size = 3.5) +
+  # geom_hline(yintercept = 0.1732621, col = 'goldenrod1') +
+  # geom_hline(yintercept = 0.2751764, col = 'darkolivegreen4') +
+  scale_color_manual(values = c("goldenrod1","darkolivegreen4")) +
+  theme_classic() +
+  theme(legend.position = 'bottom',
+        legend.direction = 'vertical',
+        legend.margin = margin(0,0,0,0),
+        legend.title = element_blank(),
+        axis.title.x = element_blank()) +
+  labs(x = '', y = 'Native Forb Richness (relevés)') +
   guides(col = FALSE)
 dev.off()
 
