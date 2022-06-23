@@ -1,4 +1,4 @@
-# updated 2022-06-10
+# updated 2022-06-22
 library(vegan)
 library(lme4)
 library(lmerTest)
@@ -31,14 +31,14 @@ cover <- lapply(cov.long[,1:9], factor) %>%
   as.data.frame(.)
 
 # prep functional group dataframe
-fxgrps <- cbind(fxgrps, cov.wide[13:59,2:577])
-colnames(fxgrps)[8:583] <- cov.wide[8,2:577]
+fxgrps <- cbind(fxgrps, cov.wide[13:64,2:673])
+colnames(fxgrps)[8:679] <- cov.wide[8,2:673]
 
 # make cover measurements numeric
-fxgrps[,8:583] <- sapply(fxgrps[,8:583],as.numeric)
+fxgrps[,8:679] <- sapply(fxgrps[,8:679],as.numeric)
 
 # aggregate data by group2
-agg.group2 <- aggregate(.~ group2, fxgrps[,c(4,8:583)], sum)
+agg.group2 <- aggregate(.~ group2, fxgrps[,c(4,8:679)], sum)
 # transpose
 agg.group2 <- setNames(data.frame(t(agg.group2[,-1])), agg.group2[,1])
 
@@ -49,22 +49,22 @@ natives <- setNames(data.frame(t(natives[,-c(1:7)])), natives[,1])
 # get the seeded forage species
 forage <- subset(fxgrps, group2 == 'Forage grass' | group2 == 'Forage forb')
 # aggregate by species2
-forage <- aggregate(.~ species2, forage[,c(2,8:583)], sum)
+forage <- aggregate(.~ species2, forage[,c(2,8:679)], sum)
 forage <- setNames(data.frame(t(forage[,-1])), forage[,1])
 
 #### add variables of interest to cover dataframe ####
 cover <- cbind(cover, cov.long[,10:12]) # get bareground, litter, moss in there
-cover$covTotal <- colSums(fxgrps[,8:583]) # total vegetative cover
+cover$covTotal <- colSums(fxgrps[,8:679]) # total vegetative cover
 cover <- cbind(cover, agg.group2) # summed cover for group2
 cover <- cbind(cover, natives) # each individual native species
 cover$natrich <- specnumber(natives) # native richness
 cover <- cbind(cover, forage) # forage species
 
 #### calculate average values across entire sampling period ####
-cover.avg <- aggregate(.~ subplot_number, cover[,c(8,10:36)], mean)
+cover.avg <- aggregate(.~ subplot.number, cover[,c(8,10:36)], mean)
 
 #### total native richness (cumulative native species across time periods) ####
-natives2 <- cbind(subplot = cov.long$subplot_number, natives[,-9])
+natives2 <- cbind(subplot = cov.long$subplot.number, natives[,-9])
 agg.natives2 <- aggregate(.~ subplot, natives2, sum)
 cover.avg$natrich <- specnumber(agg.natives2[,2:11])
 cover.avg <- cbind(cover[cover$month=='2021-11',1:10], cover.avg[,-1])
@@ -73,6 +73,5 @@ colnames(cover.avg)[8:9] <- c('Bareground_November','Bareground')
   
 
 ######## save processed cover data as .csv files ########
-write.csv(cover, file = 'cover-processed.csv', row.names = FALSE)
-write.csv(cover.avg, file = 'cover_avg-processed.csv', row.names = FALSE)
-?write.csv
+write.csv(cover, file = 'cover-processed2.csv', row.names = FALSE)
+write.csv(cover.avg, file = 'cover_avg-processed2.csv', row.names = FALSE)

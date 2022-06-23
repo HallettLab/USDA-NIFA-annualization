@@ -1,4 +1,4 @@
-#### 6/10/2022: Preliminary analyses MBF experiment
+#### 6/22/2022: Preliminary analyses MBF experiment
 library(lme4)
 library(lmerTest)
 library(car)
@@ -18,8 +18,8 @@ setwd("C:/Users/paulr/Dropbox (University of Oregon)/OREGON/Postdoc/USDA-NIFA pr
 Rout <- "C:/Users/paulr/Dropbox (University of Oregon)/OREGON/Postdoc/USDA-NIFA project/MBF Experiment/Reed_USDA-NIFA_MBF Experiment/R-code/Data-analysis/R-output"
 
 # read in processed cover data
-cover <- read.csv('cover-processed.csv')
-cover.avg <- read.csv('cover_avg-processed.csv')
+cover <- read.csv('cover-processed2.csv')
+cover.avg <- read.csv('cover_avg-processed2.csv')
 
 # factor all the categorical variables
 cover[,1:9] <- lapply(cover[,1:9], factor)
@@ -28,7 +28,7 @@ cover.avg[,1:7] <- lapply(cover.avg[,1:7], factor)
 levels(cover$pasture)
 levels(cover$pasture) <- c('Ryegrass', 'Perennial forage mix')
 levels(cover$month)
-levels(cover$month) <- c('Nov','Jan','Feb','Mar','Apr','May')
+levels(cover$month) <- c('Nov','Jan','Feb','Mar','Apr','May','Jun')
 
 levels(cover.avg$pasture)
 levels(cover.avg$pasture) <- c('Ryegrass', 'Perennial forage mix')
@@ -115,6 +115,13 @@ Anova(m.natcov.may, type = 3)
 summary(m.natcov.may)
 emm.natcov.may <- emmeans(m.natcov.may, pairwise ~ grazing)
 
+# jun
+m.natcov.jun <- lm(Seeded.native.logit ~ grazing * pasture, data = cover.seeded[cover.seeded$month == 'Jun',])
+Anova(m.natcov.jun, type = 3)
+summary(m.natcov.jun)
+emm.natcov.jun <- emmeans(m.natcov.jun, pairwise ~ grazing)
+
+
 # #### Total native cover: average two plots together for each block ####
 # sumSE.nativecov2 <- summarySE(cover.seeded, measurevar = "Seeded.native", groupvars = c('month','block','pasture','grazing','seeded'))
 # hist(logit(sumSE.nativecov2$Seeded.native, adjust = 0.01))
@@ -172,7 +179,7 @@ ggplot(cover.seeded, aes(x = month, y = natrich, fill = grazing)) +
         legend.position = 'bottom') +
   # legend.title = element_blank())
   facet_grid(seeded ~ pasture)
-dev.off()
+# dev.off()
 # ggplot() +
 #   geom_point(data = cover.seeded, aes(x = month, y = natrich, group = block, shape = grazing, col = grazing), alpha = 0.2, position = position_dodge(0.8), size = 2) +
 #   geom_errorbar(data = sumSE.natrich, aes(x = month, ymin = natrich - se, ymax = natrich + se, col = grazing), width = 0) +
@@ -218,6 +225,12 @@ emm.natrich.apr <- emmeans(m.natrich.apr, pairwise ~ grazing|pasture)
 m.natrich.may <- glm(natrich ~ grazing * pasture, data = cover.seeded[cover.seeded$month == 'May',],family = 'poisson')
 summary(m.natrich.may)
 emm.natrich.may <- emmeans(m.natrich.may, pairwise ~ grazing|pasture)
+
+# june
+m.natrich.jun <- glm(natrich ~ grazing * pasture, data = cover.seeded[cover.seeded$month == 'Jun',],family = 'poisson')
+summary(m.natrich.jun)
+emm.natrich.jun <- emmeans(m.natrich.jun, pairwise ~ grazing|pasture)
+
 
 #### Native cover (averaged across time) ####
 hist(logit(cover.avg.seeded$Seeded.native, adjust = 0.01))
@@ -541,9 +554,9 @@ dev.off()
 
 #### grass, bareground, litter ####
 background <- cover[,-c(13:14)]
-background <- gather(background, category, cover, Bareground:Forage.grass, factor_key=TRUE)
+background <- gather(background, category, cover, Bare.ground:Forage.grass, factor_key=TRUE)
 
-background$category <- factor(background$category, levels = c('Bareground','Litter','Moss','Forage.grass'))
+background$category <- factor(background$category, levels = c('Bare.ground','Litter','Moss','Forage.grass'))
 levels(background$category) <- c('Bare ground','Litter','Moss','Grass')
 
 
